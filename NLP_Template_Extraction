@@ -1,0 +1,62 @@
+# import necessary libraries
+import spacy
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+
+# load the NLP model
+nlp = spacy.load('en_core_web_sm')
+
+# define the template
+template = {
+    'customer_name': '',
+    'product_name': '',
+    'product_quantity': '',
+    'product_price': '',
+    'total_price': ''
+}
+
+# define the input document
+input_document = "Customer Name: John Doe\nProduct Name: iPhone\nProduct Quantity: 1\nProduct Price: $999\nTotal Price: $999"
+
+# extract named entities from the input document
+doc = nlp(input_document)
+customer_name = ''
+product_name = ''
+for ent in doc.ents:
+    if ent.label_ == 'PERSON':
+        customer_name = ent.text
+    if ent.label_ == 'PRODUCT':
+        product_name = ent.text
+
+# extract product quantity and price using part-of-speech tagging
+doc = nlp(input_document)
+product_quantity = ''
+product_price = ''
+for token in doc:
+    if token.pos_ == 'NUM':
+        if not product_quantity:
+            product_quantity = token.text
+        else:
+            product_price = token.text
+
+# fill in the template
+template['customer_name'] = customer_name
+template['product_name'] = product_name
+template['product_quantity'] = product_quantity
+template['product_price'] = product_price
+template['total_price'] = str(int(product_quantity) * int(product_price))
+
+# classify the input document as positive or negative using machine learning
+X_train = ['This is a positive document', 'This is a negative document']
+y_train = ['positive', 'negative']
+vectorizer = CountVectorizer()
+X_train_vectorized = vectorizer.fit_transform(X_train)
+clf = MultinomialNB()
+clf.fit(X_train_vectorized, y_train)
+X_test = [input_document]
+X_test_vectorized = vectorizer.transform(X_test)
+y_pred = clf.predict(X_test_vectorized)
+
+# print the template and the prediction
+print("Template:", template)
+print("Prediction:", y_pred[0])
